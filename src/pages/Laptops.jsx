@@ -4,7 +4,6 @@ import { useProducts } from "../hooks/useProducts";
 
 export default function Laptops() {
   const { products, loading } = useProducts("laptops");
-
   if (loading)
     return (
       <BaseLayout title="Laptops">

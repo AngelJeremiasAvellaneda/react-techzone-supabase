@@ -3,7 +3,7 @@ import BaseLayout from "../layouts/BaseLayout";
 import { useProducts } from "../hooks/useProducts";
 
 export default function Desktops() {
-  const { products, loading } = useProducts("desktops");
+  const { products, loading } = useProducts("desktops"); // 👈 categoría correcta
 
   if (loading)
     return (

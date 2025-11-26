@@ -11,14 +11,12 @@ import "slick-carousel/slick/slick-theme.css";
 export default function ProductDetail() {
   const { id } = useParams();
 
-  // 📌 Cargar productos desde Firebase
   const { products: laptops, loading: loadingLaptops } = useProducts("laptops");
   const { products: desktops, loading: loadingDesktops } = useProducts("desktops");
   const { products: accessories, loading: loadingAccessories } = useProducts("accessories");
 
   const [product, setProduct] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
-
   const [imagenSeleccionada, setImagenSeleccionada] = useState("");
   const [cantidad, setCantidad] = useState(1);
   const [tabActivo, setTabActivo] = useState("descripcion");
@@ -27,10 +25,18 @@ export default function ProductDetail() {
   const mainImgRef = useRef(null);
   const zoomLevel = 1.4;
 
-  // 📌 Unir todas las colecciones cuando estén listas
+  // 📌 Unir todas las colecciones y mapear los nombres de campos
   useEffect(() => {
     if (!loadingLaptops && !loadingDesktops && !loadingAccessories) {
-      const merged = [...laptops, ...desktops, ...accessories];
+      const merged = [...laptops, ...desktops, ...accessories].map(p => ({
+        ...p,
+        nombre: p.name,
+        precio: p.price,
+        descripcion: p.description,
+        imagen: p.image,
+        tipo: p.categories?.name || "",
+        specs: p.specs || {},
+      }));
       setAllProducts(merged);
 
       const found = merged.find(p => String(p.id) === String(id));
@@ -55,13 +61,8 @@ export default function ProductDetail() {
   useEffect(() => {
     const mainImg = mainImgRef.current;
     const zoomLens = zoomLensRef.current;
-
     if (!mainImg || !zoomLens) return;
-
-    if (window.innerWidth < 768) {
-      zoomLens.style.display = "none";
-      return;
-    }
+    if (window.innerWidth < 768) return (zoomLens.style.display = "none");
 
     const updateLens = () => {
       zoomLens.style.backgroundImage = `url(${imagenSeleccionada})`;
@@ -74,16 +75,12 @@ export default function ProductDetail() {
     function moveLens(e) {
       const rect = mainImg.getBoundingClientRect();
       const lensSize = zoomLens.offsetWidth / 2;
-
       let x = e.clientX - rect.left;
       let y = e.clientY - rect.top;
-
       x = Math.max(lensSize, Math.min(x, rect.width - lensSize));
       y = Math.max(lensSize, Math.min(y, rect.height - lensSize));
-
       zoomLens.style.left = `${x - lensSize}px`;
       zoomLens.style.top = `${y - lensSize}px`;
-
       zoomLens.style.backgroundPosition = `-${(x * zoomLevel) - lensSize}px -${(y * zoomLevel) - lensSize}px`;
     }
 
@@ -109,8 +106,13 @@ export default function ProductDetail() {
     );
   }
 
+  // ✅ Productos relacionados
   const relacionados = allProducts
-    .filter(p => p.id !== product.id && (p.tipo === product.tipo || p.marca === product.marca))
+    .filter(
+      p =>
+        p.id !== product.id &&
+        (p.tipo === product.tipo || p.marca === product.marca || p.subcategoria === product.subcategoria)
+    )
     .slice(0, 6);
 
   const galeria = product.galeria || [product.imagen];
@@ -130,10 +132,8 @@ export default function ProductDetail() {
   return (
     <BaseLayout title={product.nombre}>
       <main className="mt-16 px-6 lg:flex lg:gap-8">
-
-        {/* 📌 IMAGEN PRINCIPAL + LUPA */}
+        {/* IMAGEN PRINCIPAL + GALERÍA */}
         <div className="lg:w-1/2 flex flex-col gap-4 relative">
-
           <div className="relative w-full overflow-hidden rounded shadow-lg">
             <img
               key={imagenSeleccionada}
@@ -142,7 +142,6 @@ export default function ProductDetail() {
               alt={product.nombre}
               className="w-full h-[500px] object-contain rounded"
             />
-
             <div
               ref={zoomLensRef}
               className="absolute w-40 h-40 border border-gray-500 rounded-full pointer-events-none hidden"
@@ -157,37 +156,46 @@ export default function ProductDetail() {
               }}
             ></div>
           </div>
+
+          {galeria.length > 1 && (
+            <Slider {...sliderSettings} className="mt-2">
+              {galeria.map((img, idx) => (
+                <div key={idx} className="p-1 cursor-pointer">
+                  <img
+                    src={img}
+                    alt={`Imagen ${idx + 1}`}
+                    className="w-full h-24 object-contain rounded"
+                    onClick={() => setImagenSeleccionada(img)}
+                  />
+                </div>
+              ))}
+            </Slider>
+          )}
         </div>
 
         {/* INFORMACIÓN DEL PRODUCTO */}
         <div className="lg:w-1/2 flex flex-col gap-4">
-
           <h1 className="text-3xl font-bold text-[var(--accent)]">{product.nombre}</h1>
           <p className="text-[var(--text)] text-lg font-semibold">S/. {product.precio}</p>
 
           <ul className="text-[var(--text)] space-y-1">
             {product.tipo && <li><strong>Tipo:</strong> {product.tipo}</li>}
             {product.marca && <li><strong>Marca:</strong> {product.marca}</li>}
-            {product.procesador && <li><strong>Procesador:</strong> {product.procesador}</li>}
-            {product.ram && <li><strong>RAM:</strong> {product.ram} GB</li>}
-            {product.almacenamiento && <li><strong>Almacenamiento:</strong> {product.almacenamiento} GB</li>}
-            {product.pantalla && <li><strong>Pantalla:</strong> {product.pantalla}"</li>}
+            {product.subcategoria && <li><strong>Subcategoría:</strong> {product.subcategoria}</li>}
+            {product.specs &&
+              Object.entries(product.specs).map(([key, value]) => (
+                <li key={key}>
+                  <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong> {Array.isArray(value) ? value.join(", ") : value}
+                </li>
+              ))}
           </ul>
 
           {/* Cantidad + Carrito */}
           <div className="flex items-center gap-4 mt-4">
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCantidad(Math.max(1, cantidad - 1))}
-                className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
-              >-</button>
-
+              <button onClick={() => setCantidad(Math.max(1, cantidad - 1))} className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700">-</button>
               <span>{cantidad}</span>
-
-              <button
-                onClick={() => setCantidad(cantidad + 1)}
-                className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
-              >+</button>
+              <button onClick={() => setCantidad(cantidad + 1)} className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700">+</button>
             </div>
 
             <button
@@ -197,7 +205,7 @@ export default function ProductDetail() {
                   nombre: product.nombre,
                   precio: product.precio,
                   cantidad,
-                  imagen: product.imagen,
+                  imagen: imagenSeleccionada,
                 })
               }
               className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition"
@@ -210,11 +218,7 @@ export default function ProductDetail() {
           <div className="mt-6">
             <div className="flex gap-4 border-b border-gray-300">
               {["descripcion", "especificaciones", "opiniones"].map(tab => (
-                <button
-                  key={tab}
-                  className={`py-2 ${tabActivo === tab ? "border-b-2 border-indigo-600 font-semibold" : ""}`}
-                  onClick={() => setTabActivo(tab)}
-                >
+                <button key={tab} className={`py-2 ${tabActivo === tab ? "border-b-2 border-indigo-600 font-semibold" : ""}`} onClick={() => setTabActivo(tab)}>
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
@@ -222,29 +226,26 @@ export default function ProductDetail() {
 
             <div className="mt-4 text-[var(--text)]">
               {tabActivo === "descripcion" && <p>{product.descripcion || "No hay descripción disponible."}</p>}
-
               {tabActivo === "especificaciones" && (
                 <ul className="space-y-1">
-                  {product.tipo && <li><strong>Tipo:</strong> {product.tipo}</li>}
-                  {product.marca && <li><strong>Marca:</strong> {product.marca}</li>}
-                  {product.procesador && <li><strong>Procesador:</strong> {product.procesador}</li>}
-                  {product.ram && <li><strong>RAM:</strong> {product.ram} GB</li>}
-                  {product.almacenamiento && <li><strong>Almacenamiento:</strong> {product.almacenamiento} GB</li>}
-                  {product.pantalla && <li><strong>Pantalla:</strong> {product.pantalla}"</li>}
+                  {product.specs &&
+                    Object.entries(product.specs).map(([key, value]) => (
+                      <li key={key}>
+                        <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong> {Array.isArray(value) ? value.join(", ") : value}
+                      </li>
+                    ))}
                 </ul>
               )}
-
               {tabActivo === "opiniones" && <p>No hay opiniones todavía.</p>}
             </div>
           </div>
         </div>
       </main>
 
-      {/* ✓ PRODUCTOS RELACIONADOS */}
+      {/* PRODUCTOS RELACIONADOS */}
       {relacionados.length > 0 && (
         <section className="mt-12 px-6">
           <h2 className="text-2xl font-semibold mb-4 text-[var(--accent)]">Productos relacionados</h2>
-
           <Slider {...sliderSettings}>
             {relacionados.map(p => (
               <div key={p.id} className="p-2">

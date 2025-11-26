@@ -158,22 +158,21 @@ const ProductsLayout = ({ title, products }) => {
               className="producto flex flex-col sm:flex-row items-center border-b border-gray-600 p-4 hover:bg-[var(--menu-bg)] transition"
             >
               <a href={`/products/${p.id}`} className="w-full sm:w-48 flex-shrink-0">
-                <img src={p.imagen} alt={p.nombre} className="w-full h-32 object-cover rounded" />
+                <img src={p.image} alt={p.name} className="w-full h-32 object-cover rounded" />
               </a>
               <div className="flex-1 sm:ml-4 flex flex-col justify-between w-full mt-2 sm:mt-0">
                 <div>
-                  <h3 className="text-[var(--accent)] font-semibold text-lg">{p.nombre}</h3>
+                  <h3 className="text-[var(--accent)] font-semibold text-lg">{p.name}</h3>
                   <ul className="text-[var(--text)] text-sm mt-2 space-y-1">
-                    {p.procesador && <li><strong>Procesador:</strong> {p.procesador}</li>}
-                    {p.ram && <li><strong>RAM:</strong> {p.ram} GB</li>}
-                    {p.almacenamiento && <li><strong>Almacenamiento:</strong> {p.almacenamiento} GB</li>}
-                    {p.pantalla && <li><strong>Pantalla:</strong> {p.pantalla}"</li>}
+                    {p?.specs?.procesador && <li><strong>Procesador:</strong> {p.specs.procesador}</li>}
+                    {p?.specs?.ram && <li><strong>RAM:</strong> {p.specs.ram} GB</li>}
+                    {p?.specs?.almacenamiento && <li><strong>Almacenamiento:</strong> {p.specs.almacenamiento} GB</li>}
+                    {p?.specs?.pantalla && <li><strong>Pantalla:</strong> {p.specs.pantalla}"</li>}
                   </ul>
                 </div>
 
                 <div className="mt-2 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-                  <span className="text-[var(--accent)] font-bold text-lg">S/. {p.precio}</span>
-
+                    <span className="text-[var(--accent)] font-bold text-lg">S/. {p.price}</span>
                   <div className="flex items-center gap-2">
                     <button onClick={() => decrementar(p.id)} className="px-2 py-1 bg-gray-600 text-white rounded hover:bg-gray-700">-</button>
                     <span className="px-2">{cantidades[p.id] || 1}</span>
@@ -183,10 +182,10 @@ const ProductsLayout = ({ title, products }) => {
                   <button
                     onClick={() => window.addToCart({
                       id: p.id,
-                      nombre: p.nombre,
-                      precio: p.precio,
+                      name: p.name,
+                      price: p.price,
+                      image: p.image,
                       cantidad: cantidades[p.id] || 1,
-                      imagen: p.imagen
                     })}
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition"
                   >
