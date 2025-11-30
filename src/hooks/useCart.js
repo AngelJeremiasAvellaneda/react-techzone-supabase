@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { useAuth } from "../context/AuthContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx"; 
 
 export const useCart = () => {
   const { user } = useAuth();
@@ -8,15 +8,14 @@ export const useCart = () => {
     const stored = localStorage.getItem("cart");
     return stored ? JSON.parse(stored) : [];
   });
+  const [cartOpen, setCartOpen] = useState(false);
 
-  const [cartOpen, setCartOpen] = useState(false); // <-- nuevo estado
-
-  // Guardar en localStorage
+  // Guardar carrito en localStorage
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
-  // Sincronizar carrito con DB al login
+  // Sincronizar carrito con DB al iniciar sesión
   useEffect(() => {
     const syncCart = async () => {
       if (!user) return;
@@ -44,27 +43,22 @@ export const useCart = () => {
         image: item.products.image
       }));
 
-      const mergedCart = [...mappedDbCart];
-      cart.forEach(localItem => {
-        const exists = mergedCart.find(i => i.id === localItem.id);
-        if (exists) {
-          exists.quantity += localItem.quantity;
-        } else {
-          mergedCart.push(localItem);
-        }
-      });
+      setCart(mappedDbCart);
 
-      setCart(mergedCart);
-
-      for (const item of mergedCart) {
-        await supabase.from("cart_items").upsert({
-          user_id: user.id,
-          product_id: item.id,
-          quantity: item.quantity
-        });
+      // Subir todos los items a la DB de una sola vez con onConflict
+      if (mappedDbCart.length > 0) {
+        await supabase.from("cart_items").upsert(
+          mappedDbCart.map(item => ({
+            user_id: user.id,
+            product_id: String(item.id),
+            quantity: item.quantity
+          })),
+          { onConflict: ['user_id', 'product_id'] }
+        );
       }
-    };
 
+      localStorage.removeItem("cart");
+    };
     syncCart();
   }, [user]);
 
@@ -81,26 +75,28 @@ export const useCart = () => {
       return [...prev, product];
     });
 
-    // Abrir automáticamente el drawer
     setCartOpen(true);
 
     if (user) {
-      setTimeout(async () => {
-        const { data: existing } = await supabase
-          .from("cart_items")
-          .select("quantity")
-          .eq("user_id", user.id)
-          .eq("product_id", product.id)
-          .single();
+      const { data: existing } = await supabase
+        .from("cart_items")
+        .select("quantity")
+        .eq("user_id", user.id)
+        .eq("product_id", Number(product.id))
+        .maybeSingle(); // <- antes .single()
 
-        const nuevaCantidad = (existing?.quantity || 0) + product.quantity;
-        await supabase.from("cart_items").upsert({
+      const nuevaCantidad = (existing?.quantity || 0) + product.quantity;
+
+      await supabase.from("cart_items").upsert(
+        {
           user_id: user.id,
-          product_id: product.id,
+          product_id: Number(product.id),
           quantity: nuevaCantidad
-        });
-      }, 0);
+        },
+        { onConflict: ['user_id', 'product_id'] }
+      );
     }
+
   };
 
   const updateQuantity = async (id, delta) => {
@@ -114,7 +110,7 @@ export const useCart = () => {
         supabase.from("cart_items")
           .update({ quantity: item.quantity })
           .eq("user_id", user.id)
-          .eq("product_id", id);
+          .eq("product_id", String(id));
       }
 
       return updated;
@@ -127,7 +123,7 @@ export const useCart = () => {
       await supabase.from("cart_items")
         .delete()
         .eq("user_id", user.id)
-        .eq("product_id", id);
+        .eq("product_id", String(id));
     }
   };
 
@@ -152,7 +148,7 @@ export const useCart = () => {
     totalItems,
     totalPrice,
     setCart,
-    cartOpen, // <-- nuevo
-    setCartOpen // <-- nuevo
+    cartOpen,
+    setCartOpen
   };
 };

@@ -124,19 +124,28 @@ export default function ProductDetail() {
     setCartOpen(true);
   };
 
+  let sharing = false;
+
   const handleShare = async () => {
-    if (!navigator.share) return;
+    if (!navigator.share) {
+      alert("Tu navegador no soporta la función de compartir.");
+      return;
+    }
+    if (sharing) return; // prevenir múltiples clicks
+    sharing = true;
+
     try {
       await navigator.share({
         title: product.name,
-        text: product.description,
+        text: product.description || "",
         url: window.location.href
       });
     } catch (err) {
-      console.log('Error compartiendo:', err);
+      console.log("Error compartiendo:", err);
+    } finally {
+      sharing = false; // reset para permitir futuros shares
     }
   };
-
   const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 
   // Configuración dinámica del slider basada en el ancho de ventana

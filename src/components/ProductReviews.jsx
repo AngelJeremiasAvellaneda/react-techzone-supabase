@@ -1,7 +1,7 @@
 // src/components/ProductReviews.jsx
 import React, { useState } from "react";
 import { Star, Trash2, User } from "lucide-react";
-import { useReviews, useCanReview } from "../hooks/useReviews";
+import { useReviews } from "../hooks/useReviews";
 import { Link } from "react-router-dom";
 
 const ProductReviews = ({ productId }) => {
@@ -12,10 +12,10 @@ const ProductReviews = ({ productId }) => {
     averageRating, 
     totalReviews,
     addReview,
-    deleteReview 
+    deleteReview,
+    userReview,
+    canReview
   } = useReviews(productId);
-
-  const { canReview, userReview, loading: loadingCanReview } = useCanReview(productId);
 
   const [showForm, setShowForm] = useState(false);
   const [rating, setRating] = useState(5);
@@ -87,7 +87,7 @@ const ProductReviews = ({ productId }) => {
     });
   };
 
-  if (loading || loadingCanReview) {
+  if (loading) {
     return (
       <div className="space-y-4">
         <div className="animate-pulse space-y-3">
@@ -234,7 +234,7 @@ const ProductReviews = ({ productId }) => {
                       <User className="w-6 h-6 text-gray-600 dark:text-gray-300" />
                     </div>
                     <div>
-                      <div className="font-semibold">{review.profiles?.full_name || "Usuario"}</div>
+                      <div className="font-semibold">{review.user?.full_name || "Usuario"}</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">{formatDate(review.created_at)}</div>
                     </div>
                   </div>
