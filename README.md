@@ -1,8 +1,8 @@
 # 📘 **TechZone React – E-Commerce de Tecnología**
 
 **Autor:** *Angel Addair Jeremías Avellaneda*
-
 **Autor:** *Rivera Retamozo Kenyi Pool*
+
 ---
 TechZone es una tienda online moderna desarrollada con **React + Vite**, integrada con **Firebase**, utilizando **TailwindCSS**, loaders con tema dinámico (dark/light), animaciones, filtros, carrito persistente y una arquitectura limpia basada en *layouts*, *hooks* y *components*.
 
